@@ -142,10 +142,40 @@
                 <div id="preventionContent" class="info-content"></div>
             </div>
 
+            <!-- 質疑応答・相談セクション（対処方法や医療機関などの相談） -->
+            <div class="consultation-section">
+                <div class="consultation-header">
+                    <div class="consultation-title">💬 魔人に質問・相談する</div>
+                    <p class="consultation-subtitle">推測結果を踏まえた対処法や、医療機関の選び方・受診の目安を何でもお尋ねください。</p>
+                </div>
+
+                <!-- クイック質問チップ（ワンクリックで質問） -->
+                <div class="quick-question-chips" id="quickQuestionChips">
+                    <button class="chip-btn" data-query="何科を受診すればいいですか？近くの病院の選び方は？">🏥 何科を受診すべき？</button>
+                    <button class="chip-btn" data-query="今すぐできる応急処置や痛みを和らげる対処法を教えてください。">⚡ 今すぐできる対処法は？</button>
+                    <button class="chip-btn" data-query="どんな症状が出たらすぐに救急や病院へ行くべきですか？">🚨 すぐ受診すべき危険な兆候は？</button>
+                    <button class="chip-btn" data-query="夜間や休日に体調が悪化したらどこに相談すればいいですか？">🌙 夜間・休日の相談窓口は？</button>
+                    <button class="chip-btn" data-query="市販薬を選ぶ際のポイントや注意点は何ですか？">💊 市販薬の選び方と注意点</button>
+                </div>
+
+                <!-- チャット履歴表示エリア -->
+                <div class="consultation-chat-box" id="consultationChatBox">
+                    <!-- JSでメッセージを追加 -->
+                </div>
+
+                <!-- 質問入力フォーム -->
+                <div class="consultation-input-area">
+                    <input type="text" id="consultationInput" class="input-text" placeholder="例：温めるべき？冷やすべき？、夜間救急の探し方は？ など" maxlength="150">
+                    <button id="btnSendConsultation" class="btn-primary" style="flex: 0 0 auto; padding: 12px 20px;">
+                        <span>質問する</span> 💬
+                    </button>
+                </div>
+            </div>
+
             <!-- アクションボタン群 -->
             <div class="actions-container">
                 <button id="btnRestart" class="btn-secondary">🔄 最初からやり直す</button>
-                <button id="btnBoost" class="btn-boost">🔍 さらに精度を上げる（＋5問追加）</button>
+                <button id="btnBoost" class="btn-boost">🔍 さらに精度を上げる（＋3問追加）</button>
             </div>
 
             <!-- 免責事項 -->

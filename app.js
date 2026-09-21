@@ -15,6 +15,10 @@ class HealthAkinatorApp {
         this.answers = {};
         this.conversationHistory = []; // AI対話履歴
         this.userNotes = [];
+        this.lastTopDisease = null;
+        this.lastResultData = null;
+        this.initialSymptom = "";
+        this.consultationHistory = [];
 
         // URLパラメータまたはハッシュ(#key=...)からのワンタップキー登録
         try {
@@ -81,6 +85,13 @@ class HealthAkinatorApp {
         this.elPreventionContent = document.getElementById("preventionContent");
         this.elBtnRestart = document.getElementById("btnRestart");
         this.elBtnBoost = document.getElementById("btnBoost");
+
+        // 質疑応答・相談セクション要素
+        this.elConsultationSection = document.querySelector(".consultation-section");
+        this.elQuickQuestionChips = document.getElementById("quickQuestionChips");
+        this.elConsultationChatBox = document.getElementById("consultationChatBox");
+        this.elConsultationInput = document.getElementById("consultationInput");
+        this.elBtnSendConsultation = document.getElementById("btnSendConsultation");
 
         // モーダル
         this.elEmergencyModal = document.getElementById("emergencyModal");
@@ -173,6 +184,28 @@ class HealthAkinatorApp {
             if (e.key === "Enter") this.elBtnCustomAnswer.click();
         });
 
+        // 質疑応答・相談セクションのイベント
+        if (this.elQuickQuestionChips) {
+            this.elQuickQuestionChips.querySelectorAll(".chip-btn").forEach(chip => {
+                chip.addEventListener("click", () => {
+                    const query = chip.dataset.query;
+                    if (query) this.handleConsultationQuery(query);
+                });
+            });
+        }
+
+        if (this.elBtnSendConsultation && this.elConsultationInput) {
+            this.elBtnSendConsultation.addEventListener("click", () => {
+                this.handleConsultationSubmit();
+            });
+
+            this.elConsultationInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    this.handleConsultationSubmit();
+                }
+            });
+        }
+
         // もう一度診断
         this.elBtnRestart.addEventListener("click", () => {
             this.resetApp();
@@ -254,6 +287,7 @@ class HealthAkinatorApp {
         this.maxTotalQuestions = 22;
         this.answers = {};
         this.conversationHistory = [];
+        this.initialSymptom = initialSymptom;
         this.userNotes = [initialSymptom];
 
         this.currentPhase = 1;
@@ -684,6 +718,20 @@ class HealthAkinatorApp {
         this.elQuickCareContent.textContent = res.quickCare || "安静にして体を休める";
         this.elPreventionContent.textContent = res.prevention || "規則正しい生活習慣";
 
+        // 質疑応答用に結果データを保持＆チャット初期化
+        this.lastResultData = res;
+        const topRaw = normalizedDiseases[0] || {};
+        this.lastTopDisease = {
+            name: topRaw.name || "推測された疾患",
+            reason: topRaw.reason || "",
+            department: res.department || "一般内科",
+            otcDrug: res.otcDrug || "薬剤師にご相談ください",
+            food: res.food || "消化の良い温かい食事",
+            quickCare: res.quickCare || "安静にして体を休める",
+            prevention: res.prevention || "規則正しい生活習慣"
+        };
+        this.initConsultationChat();
+
         if (this.targetQuestions >= 22) {
             this.elBtnBoost.textContent = "✨ 最大精度達成（全22問完了）";
             this.elBtnBoost.style.opacity = "0.7";
@@ -751,6 +799,18 @@ class HealthAkinatorApp {
         this.elFoodContent.textContent = topDisease.food;
         this.elQuickCareContent.textContent = topDisease.quickCare;
         this.elPreventionContent.textContent = topDisease.prevention;
+
+        // 質疑応答用に結果データを保持＆チャット初期化
+        this.lastTopDisease = topDisease;
+        this.lastResultData = {
+            diseases: normalizedDiseases,
+            department: topDisease.department,
+            otcDrug: topDisease.otcDrug,
+            food: topDisease.food,
+            quickCare: topDisease.quickCare,
+            prevention: topDisease.prevention
+        };
+        this.initConsultationChat();
 
         if (this.targetQuestions >= 22) {
             this.elBtnBoost.textContent = "✨ 最大精度達成（全22問完了）";
@@ -822,6 +882,193 @@ class HealthAkinatorApp {
 
     setGenieSpeech(text) {
         this.elGenieSpeech.textContent = text;
+    }
+
+    // =========================================================================
+    // 質疑応答・相談機能（対処法・受診医療機関・相談窓口）
+    // =========================================================================
+
+    // 質疑応答チャットの初期化
+    initConsultationChat() {
+        if (!this.elConsultationChatBox) return;
+        this.consultationHistory = [];
+        this.elConsultationChatBox.innerHTML = "";
+
+        const diseaseName = this.lastTopDisease?.name || "お身体の不調";
+        const welcomeHtml = `
+            <p>見えましたよ…！推測結果（<strong>${diseaseName}</strong>など）を踏まえて、対処方法や受診すべき医療機関（何科が良いか、夜間救急の相談窓口など）、何でも自由に質問してくださいね！</p>
+        `;
+        this.addChatMessage("genie", welcomeHtml);
+    }
+
+    // 質問送信
+    handleConsultationSubmit() {
+        if (!this.elConsultationInput) return;
+        const text = this.elConsultationInput.value.trim();
+        if (!text) return;
+        this.elConsultationInput.value = "";
+        this.handleConsultationQuery(text);
+    }
+
+    // 質問処理（AIモードまたはスマート適応エンジン）
+    async handleConsultationQuery(query) {
+        if (!query) return;
+
+        // ユーザーメッセージを追加
+        this.addChatMessage("user", query);
+
+        // 思考中インジケータ表示
+        this.showConsultationTyping();
+
+        try {
+            let replyHtml = "";
+            if (this.isAiMode && this.geminiApiKey) {
+                replyHtml = await this.askGeminiConsultation(query);
+            } else {
+                // スマート適応モード：内蔵ナレッジエンジンから回答生成
+                await new Promise(r => setTimeout(r, 450)); // 自然な返答ウェイト
+                replyHtml = generateConsultationResponse(query, this.categoryKey, this.lastTopDisease, this.answers);
+            }
+
+            this.removeConsultationTyping();
+            this.addChatMessage("genie", replyHtml);
+        } catch (err) {
+            console.error("Consultation error:", err);
+            this.removeConsultationTyping();
+            // 万一のエラー時は内蔵ナレッジへフォールバック
+            const fallbackHtml = generateConsultationResponse(query, this.categoryKey, this.lastTopDisease, this.answers);
+            this.addChatMessage("genie", fallbackHtml);
+        }
+    }
+
+    // チャットメッセージ描画
+    addChatMessage(sender, contentHtml) {
+        if (!this.elConsultationChatBox) return;
+
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `chat-msg chat-msg-${sender}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "chat-avatar";
+        avatar.innerHTML = sender === "genie" ? "🔮" : "👤";
+
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        bubble.innerHTML = contentHtml;
+
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+
+        this.elConsultationChatBox.appendChild(msgDiv);
+        this.elConsultationChatBox.scrollTop = this.elConsultationChatBox.scrollHeight;
+    }
+
+    // 思考中インジケータ表示
+    showConsultationTyping() {
+        if (!this.elConsultationChatBox) return;
+        this.removeConsultationTyping();
+
+        const typingDiv = document.createElement("div");
+        typingDiv.className = "chat-msg chat-msg-genie";
+        typingDiv.id = "consultationTypingIndicator";
+
+        const avatar = document.createElement("div");
+        avatar.className = "chat-avatar";
+        avatar.innerHTML = "🔮";
+
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble chat-typing";
+        bubble.innerHTML = `
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        `;
+
+        typingDiv.appendChild(avatar);
+        typingDiv.appendChild(bubble);
+
+        this.elConsultationChatBox.appendChild(typingDiv);
+        this.elConsultationChatBox.scrollTop = this.elConsultationChatBox.scrollHeight;
+    }
+
+    // 思考中インジケータ削除
+    removeConsultationTyping() {
+        const ind = document.getElementById("consultationTypingIndicator");
+        if (ind) ind.remove();
+    }
+
+    // Gemini APIによる相談応答
+    async callGeminiConsultationApi(query) {
+        let model = this.geminiModel || "gemini-3.5-flash-lite";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
+
+        const contextDisease = JSON.stringify(this.lastResultData || this.lastTopDisease || {});
+        const systemInstruction = `あなたは「ヘルス・アキネーター」の医療相談魔人です。
+ユーザーは質問診断を終え、以下の推測結果が出ています：
+【推測結果データ】: ${contextDisease}
+【主訴】: ${this.initialSymptom || ""}
+
+ユーザーからの質問（対処法、応急処置、何科を受診すべきか、病院選び、受診タイミングの目安、夜間休日の相談など）に対して、
+自信に満ちつつも親身で優しい魔人の口調（〜じゃ、〜ですよ、など）で、分かりやすく具体的に回答してください。
+回答はHTMLタグ（<p>, <ul>, <li>, <strong>等）を用いて読みやすく整形してください。
+
+【厳守事項】
+1. 医療診断行為ではなく、一般的な医学情報と受診支援として回答すること。
+2. 危険な兆候（激痛、意識障害、呼吸困難等）がある場合は、直ちに救急車（119番）や受診を促すこと。
+3. 出力は以下のJSON形式のみで返してください：
+{
+  "reply": "<p>回答本文...</p>"
+}`;
+
+        // 過去の相談履歴も含める
+        const promptContents = [
+            ...this.consultationHistory,
+            { role: "user", parts: [{ text: query }] }
+        ];
+
+        const body = {
+            contents: promptContents,
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.7,
+                maxOutputTokens: 1024
+            }
+        };
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `API error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const candidate = data.candidates?.[0];
+        const text = candidate?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("Empty response from Gemini API");
+
+        const parsed = JSON.parse(text);
+        const replyHtml = parsed.reply || `<p>${text}</p>`;
+
+        // 相談履歴に記憶
+        this.consultationHistory.push({ role: "user", parts: [{ text: query }] });
+        this.consultationHistory.push({ role: "model", parts: [{ text: JSON.stringify({ reply: replyHtml }) }] });
+
+        return replyHtml;
+    }
+
+    async askGeminiConsultation(query) {
+        try {
+            return await this.callGeminiConsultationApi(query);
+        } catch (err) {
+            console.warn("Gemini consultation API failed, fallback to local knowledge:", err);
+            return generateConsultationResponse(query, this.categoryKey, this.lastTopDisease, this.answers);
+        }
     }
 }
 

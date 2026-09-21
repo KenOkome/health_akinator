@@ -342,3 +342,127 @@ function detectCategoryFromText(text) {
     if (t.includes("だる") || t.includes("疲れ") || t.includes("疲労") || t.includes("倦怠") || t.includes("重い") || t.includes("やる気")) return "fatigue";
     return "headache"; // デフォルト
 }
+
+// 質疑応答（対処法・医療機関・受診目安）ナレッジ応答生成エンジン
+function generateConsultationResponse(query, categoryKey, topDisease, answers = {}) {
+    const q = (query || "").toLowerCase();
+    const diseaseName = topDisease?.name || "お身体の不調";
+    const dept = topDisease?.department || "一般内科";
+    const quickCare = topDisease?.quickCare || "無理をせず安静にお過ごしください";
+    const otc = topDisease?.otcDrug || "症状に合った市販薬（薬剤師にご相談ください）";
+    const food = topDisease?.food || "消化の良い温かい食事";
+
+    // 1. 何科を受診すべきか / 病院選び
+    if (q.includes("何科") || q.includes("どの科") || q.includes("病院") || q.includes("クリニック") || q.includes("医院") || q.includes("医療機関")) {
+        return `
+            <p><strong>🏥 受診すべき診療科について</strong></p>
+            <p>今回の推測結果（${diseaseName}の可能性）から、まずは<strong>【${dept}】</strong>の受診をおすすめします。</p>
+            <ul>
+                <li><strong>まずは地域のクリニックへ：</strong>いきなり大病院に行くと「紹介状なし加算（選定療養費）」がかかる場合があるため、まずは近所の内科やかかりつけ医で診てもらうのがスムーズです。</li>
+                <li><strong>病院の探し方：</strong>厚生労働省の「医療情報ネット（ナビイ）」や自治体の医療機関検索サイトで、近隣の「${dept.split("、")[0]}」を標榜しているクリニックを探せます。</li>
+                <li><strong>受診時のコツ：</strong>「いつから」「どの部位が」「どんな風に痛む/つらいか」をメモして持参すると、医師に正確に伝わりますよ。</li>
+            </ul>
+        `;
+    }
+
+    // 2. 対処法・応急処置 / 温める・冷やす
+    if (q.includes("対処") || q.includes("応急") || q.includes("どうすれば") || q.includes("和らげ") || q.includes("冷やす") || q.includes("温める") || q.includes("処置")) {
+        let tempAdvice = "";
+        if (categoryKey === "headache") {
+            tempAdvice = "<li><strong>冷やす？温める？：</strong>ズキズキと脈打つ片頭痛なら「痛む部位やこめかみを冷やす」のが有効です。逆に肩こりを伴う締め付けられる頭痛なら「首や肩を温める・蒸しタオル」で血流を促しましょう。</li>";
+        } else if (categoryKey === "stomach") {
+            tempAdvice = "<li><strong>お腹のケア：</strong>腹部を冷やさないよう腹巻きやブランケットで温め、横になるときは胃の出口に合わせて「右半身を下（右側臥位）」にすると消化管への負担が軽減されます。</li>";
+        } else if (categoryKey === "cold") {
+            tempAdvice = "<li><strong>発熱時のケア：</strong>悪寒（寒気）がするときは体を温め、熱が上がりきって汗が出始めたら首筋や脇の下を冷やして熱を逃がしましょう。</li>";
+        }
+
+        return `
+            <p><strong>⚡ 今すぐできる対処法・応急ケア</strong></p>
+            <p>推測された【${diseaseName}】に向けて、まずは以下の処置を試してみてください：</p>
+            <ul>
+                <li><strong>基本対策：</strong>${quickCare}</li>
+                ${tempAdvice}
+                <li><strong>刺激を避ける：</strong>スマホやPC画面の強い光・大きな音を避け、部屋を少し暗くしてリラックスできる姿勢で横になってください。</li>
+            </ul>
+        `;
+    }
+
+    // 3. 危険な兆候・すぐに病院へ行くべきサイン（レッドフラッグ）
+    if (q.includes("危険") || q.includes("すぐ") || q.includes("兆候") || q.includes("救急") || q.includes("悪化") || q.includes("やばい") || q.includes("サイン")) {
+        return `
+            <p><strong>🚨 直ちに受診・救急車を検討すべき危険なサイン</strong></p>
+            <p>以下のような「レッドフラッグ症状」が1つでもある場合は、様子を見ずに<strong>直ちに救急外来を受診、または救急車（☎119）</strong>を呼んでください：</p>
+            <ul>
+                <li><strong>突然の激痛：</strong>これまで経験したことのないような「突然ハンマーで殴られたような激しい頭痛」や「引き裂かれるような激痛」</li>
+                <li><strong>神経症状：</strong>手足のしびれ・脱力、ろれつが回らない、視界が二重に見える、意識がもうろうとする</li>
+                <li><strong>呼吸・循環：</strong>息苦しさ（呼吸困難）、激しい胸の痛みや圧迫感、冷汗</li>
+                <li><strong>消化器：</strong>血を吐く（吐血）、真っ黒な便や血便、動けないほどの猛烈な腹痛</li>
+                <li><strong>受診判断に迷ったら：</strong>救急安心センター<strong>「#7119」</strong>（24時間対応）に電話すると、医師や看護師が緊急性を判定してくれます。</li>
+            </ul>
+        `;
+    }
+
+    // 4. 夜間・休日の相談窓口
+    if (q.includes("夜間") || q.includes("休日") || q.includes("祝日") || q.includes("深夜") || q.includes("今夜") || q.includes("相談先") || q.includes("窓口") || q.includes("電話")) {
+        return `
+            <p><strong>🌙 夜間・休日の受診相談窓口</strong></p>
+            <p>夜間や休日に症状が気になったり悪化した場合の頼れる窓口です：</p>
+            <ul>
+                <li><strong>救急安心センター事業（全国対応エリア）：</strong>
+                    <br>☎ <strong>#7119</strong>（ダイヤル回線・一部地域からは 03-3212-2322 等の専用番号）
+                    <br>救急車を呼ぶべきか、今すぐ病院に行くべきか、医師・看護師が24時間体制でアドバイスしてくれます。
+                </li>
+                <li><strong>小児救急電話相談（お子様の場合）：</strong>
+                    <br>☎ <strong>#8000</strong>（夜間のお子さんの急な発熱・嘔吐などの相談）
+                </li>
+                <li><strong>休日夜間急患診療所：</strong>お住まいの自治体（市役所・区役所HP）で「休日当番医」「夜間急患診療所」を開設している医療機関を確認できます。</li>
+            </ul>
+        `;
+    }
+
+    // 5. 市販薬・薬の相談
+    if (q.includes("薬") || q.includes("市販") || q.includes("鎮痛") || q.includes("痛み止め") || q.includes("胃薬") || q.includes("風邪薬") || q.includes("サプリ")) {
+        return `
+            <p><strong>💊 市販薬の選び方と服用時の注意点</strong></p>
+            <p>【${diseaseName}】の目安となる市販薬情報です：</p>
+            <ul>
+                <li><strong>適した市販薬の目安：</strong>${otc}</li>
+                <li><strong>選び方のポイント：</strong>痛みが強い場合はNSAIDs（ロキソプロフェンやイブプロフェン）、胃が弱い方やお子様・妊娠中の方はアセトアミノフェンが選ばれることが多いです。</li>
+                <li><strong>服用時の注意：</strong>
+                    <br>・痛みがピークに達する前の「初期」に服用する方が効果的です。
+                    <br>・胃への負担を減らすため、なるべく多めの水または白湯で服用してください。
+                    <br>・月に10日以上など頻繁・長期に服用し続けると「薬物乱用頭痛」などを招く恐れがあります。症状が続く場合は必ず医師に相談してください。
+                </li>
+            </ul>
+        `;
+    }
+
+    // 6. 食事・飲み物
+    if (q.includes("食事") || q.includes("食べ") || q.includes("飲") || q.includes("栄養") || q.includes("お風呂") || q.includes("風呂")) {
+        return `
+            <p><strong>🥗 食事・生活環境のアドバイス</strong></p>
+            <ul>
+                <li><strong>おすすめの食事：</strong>${food}</li>
+                <li><strong>水分補給：</strong>常温の水、白湯、麦茶、経口補水液などをこまめに少量ずつ補給しましょう（冷たい飲料やカフェイン・アルコールは胃や血管を刺激するため控えめに）。</li>
+                <li><strong>入浴について：</strong>
+                    <br>・肩こりや筋肉疲労、緊張型頭痛：ぬるめのお湯にゆっくり浸かると血行が良くなり効果的です。
+                    <br>・片頭痛や発熱、激しい胃痛：血管が拡張して症状が悪化することがあるため、熱いお風呂は避け、シャワー程度にするか安静を優先してください。
+                </li>
+            </ul>
+        `;
+    }
+
+    // 7. デフォルト（一般的な質疑応答）
+    return `
+        <p><strong>🔮 魔人からのアドバイス</strong></p>
+        <p>あなたの回答から導き出された推測は<strong>【${diseaseName}】</strong>です。</p>
+        <ul>
+            <li><strong>推奨する診療科：</strong>${dept}</li>
+            <li><strong>応急的な対策：</strong>${quickCare}</li>
+            <li><strong>市販薬の目安：</strong>${otc}</li>
+            <li><strong>食事と栄養：</strong>${food}</li>
+        </ul>
+        <p>「何科を受診すべきか」「今夜できる応急処置」「夜間・休日の相談窓口（#7119）」など、気になることがあれば上のチップを押すか、自由に入力してお尋ねくださいね！</p>
+    `;
+}
+
