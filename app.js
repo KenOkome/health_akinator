@@ -10,8 +10,8 @@ class HealthAkinatorApp {
         this.activeQuestions = [];
         this.askedQuestionIds = new Set();
         this.currentQuestionIdx = 0;
-        this.minQuestions = 2;
-        this.maxQuestions = 5;
+        this.targetQuestions = 10;
+        this.maxTotalQuestions = 22;
         this.answers = {};
         this.conversationHistory = []; // AI対話履歴
         this.userNotes = [];
@@ -250,8 +250,8 @@ class HealthAkinatorApp {
         this.activeQuestions = [...this.categoryData.primaryQuestions];
         this.askedQuestionIds.clear();
         this.currentQuestionIdx = 0;
-        this.minQuestions = 2;
-        this.maxQuestions = 5;
+        this.targetQuestions = 10;
+        this.maxTotalQuestions = 22;
         this.answers = {};
         this.conversationHistory = [];
         this.userNotes = [initialSymptom];
@@ -334,8 +334,8 @@ class HealthAkinatorApp {
         this.askedQuestionIds.add(q.id);
 
         const qNum = this.currentQuestionIdx + 1;
-        this.elQuestionBadge.textContent = `質問 ${qNum} / 最大${this.maxQuestions}問`;
-        const progressPercent = Math.min(100, Math.round((qNum / this.maxQuestions) * 100));
+        this.elQuestionBadge.textContent = `質問 ${qNum} / ${this.targetQuestions}問（最大22問）`;
+        const progressPercent = Math.min(100, Math.round((qNum / this.targetQuestions) * 100));
         this.elProgressFill.style.width = `${progressPercent}%`;
 
         this.elQuestionText.textContent = q.text;
@@ -351,7 +351,7 @@ class HealthAkinatorApp {
             this.elAnswerOptions.appendChild(btn);
         });
 
-        if (qNum > 1 && qNum < this.maxQuestions) {
+        if (qNum > 1 && qNum < this.targetQuestions) {
             const quote = this.genieQuotes[(qNum - 1) % this.genieQuotes.length];
             this.setGenieSpeech(quote);
         }
@@ -376,30 +376,20 @@ class HealthAkinatorApp {
             }
             this.currentQuestionIdx++;
 
-            // 2問以上回答済みの場合、確信度が高ければ早期に結果表示
-            if (this.currentQuestionIdx >= this.minQuestions) {
-                const scored = this.calculateCurrentTopDiseases();
-                const topScore = scored[0]?.score || 0;
-                const secondScore = scored[1]?.score || 0;
-                if ((topScore >= 60 && (topScore - secondScore >= 20)) || this.currentQuestionIdx >= this.maxQuestions) {
-                    this.showResults();
-                    return;
-                }
-            }
-
-            if (this.currentQuestionIdx < this.maxQuestions) {
-                this.renderAdaptiveQuestion();
-            } else {
+            // 現在の目標問数（10問、13問、16問、19問、22問）に達した場合は結果表示
+            if (this.currentQuestionIdx >= this.targetQuestions) {
                 this.showResults();
+            } else {
+                this.renderAdaptiveQuestion();
             }
         }
     }
 
-    // Gemini APIによる動的質問生成（2問以上、最大5問）
+    // Gemini APIによる動的質問生成（初回10問、その後3問ごと、最大22問）
     async askGeminiNextQuestion(userMessage) {
         const qNum = this.currentQuestionIdx + 1;
-        this.elQuestionBadge.textContent = `質問 ${Math.min(qNum, this.maxQuestions)} / 最大${this.maxQuestions}問`;
-        this.elProgressFill.style.width = `${Math.min(100, Math.round((qNum / this.maxQuestions) * 100))}%`;
+        this.elQuestionBadge.textContent = `質問 ${Math.min(qNum, this.targetQuestions)} / ${this.targetQuestions}問（最大22問）`;
+        this.elProgressFill.style.width = `${Math.min(100, Math.round((qNum / this.targetQuestions) * 100))}%`;
 
         // 読み込み中演出
         this.elQuestionText.innerHTML = '<span style="color: var(--accent-cyan);">🔮 Gemini AIが症状を分析中…</span>';
@@ -407,26 +397,21 @@ class HealthAkinatorApp {
 
         try {
             let prompt = "";
-            if (qNum >= this.maxQuestions) {
-                prompt = `現在の質問番号: ${qNum}問目（最大${this.maxQuestions}問に達しました）
+            if (qNum >= this.targetQuestions) {
+                prompt = `現在の質問番号: ${qNum}問目（目標の${this.targetQuestions}問に達しました）
 ユーザーからの入力: ${userMessage}
 
 【指示】
-これで質問は終了です。これまでの対話内容（全${qNum}問）を総合的に深く分析し、type: "result" として最終推測結果をJSON形式で返してください。`;
-            } else if (qNum < this.minQuestions) {
-                prompt = `現在の質問番号: ${qNum}問目（全${this.minQuestions}〜${this.maxQuestions}問中の${qNum}問目）
-ユーザーからの入力: ${userMessage}
-
-【指示】
-ユーザーの主訴に基づき、疾患の絞り込みを深めるための次の質問を生成してください。
-まだ1問目ですので、結果（type: "result"）は出さず、必ず type: "question" として次の質問を返してください。`;
+これで${this.targetQuestions}問すべての回答を受け取りました。
+これまでのすべての対話内容（全${qNum}問）を総合的に深く分析し、type: "result" として最終推測結果をJSON形式で返してください。`;
             } else {
-                prompt = `現在の質問番号: ${qNum}問目（全${this.minQuestions}〜${this.maxQuestions}問中の${qNum}問目）
+                prompt = `現在の質問番号: ${qNum}問目（次の結果発表は${this.targetQuestions}問目です）
 ユーザーからの入力: ${userMessage}
 
 【指示】
-これまでの文脈を踏まえ、疾患の可能性が十分に特定できた場合は type: "result" で最終結果を出力してください。
-まだ判断材料が足りず絞り込みを深めたい場合は、type: "question" として次の質問を1つだけ返してください。`;
+これまでの文脈を踏まえ、疾患の絞り込みを深めるための次の質問を1つだけ生成してください。
+まだ${qNum}問目ですので、結果（type: "result"）は出さず、必ず type: "question" として次の質問を返してください。
+答えの選択肢（options配列）は、状況に応じて必ず2つ以上6つ未満（2個〜5個）で設定してください。`;
             }
 
             const res = await this.callGemini(prompt);
@@ -435,26 +420,19 @@ class HealthAkinatorApp {
             this.conversationHistory.push({ role: "user", parts: [{ text: userMessage }] });
             this.conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(res) }] });
 
-            if (qNum < this.minQuestions) {
-                // 1問目：絶対にresultは出さない
-                if (res.type === "result" || !res.question) {
-                    const forceQRes = await this.callGemini(`まだ1問目です。2問以上質問を行う必要があります。結果は出さず、type: "question" で質問を返してください。`);
-                    this.renderAiQuestion(forceQRes);
-                } else {
-                    this.renderAiQuestion(res);
-                }
-            } else if (qNum >= this.maxQuestions) {
-                // 5問目に達した場合：必ずresult
+            if (qNum >= this.targetQuestions) {
+                // 目標問数に達した場合：必ずresult
                 if (res.type === "result") {
                     this.showAiResults(res);
                 } else {
-                    const finalRes = await this.callGemini(`全${this.maxQuestions}問が完了しました。type: "result" として最終推測結果をJSONで出力してください。`);
+                    const finalRes = await this.callGemini(`全${this.targetQuestions}問が完了しました。type: "result" として最終推測結果をJSONで出力してください。`);
                     this.showAiResults(finalRes);
                 }
             } else {
-                // 2〜4問目：AIがresultを出したら結果表示、questionを出したら質問継続
-                if (res.type === "result") {
-                    this.showAiResults(res);
+                // 目標問数未満：AIが勝手にresultを出そうとしたら質問を再生成
+                if (res.type === "result" || !res.question) {
+                    const forceQRes = await this.callGemini(`まだ${qNum}問目です。結果発表は${this.targetQuestions}問目です。結果は出さず、type: "question" で次の質問を返してください（選択肢は2〜5個）。`);
+                    this.renderAiQuestion(forceQRes);
                 } else {
                     this.renderAiQuestion(res);
                 }
@@ -535,7 +513,13 @@ class HealthAkinatorApp {
         if (res.speech) this.setGenieSpeech(res.speech);
         this.elQuestionText.textContent = res.question;
 
-        const options = res.options || ["はい", "いいえ", "どちらともいえない"];
+        let options = res.options;
+        if (!Array.isArray(options) || options.length < 2) {
+            options = ["はい", "いいえ", "どちらともいえない"];
+        } else if (options.length >= 6) {
+            options = options.slice(0, 5); // 2つ以上6つ未満（最大5個）に制限
+        }
+
         this.elAnswerOptions.innerHTML = "";
         options.forEach((opt, idx) => {
             const btn = document.createElement("button");
@@ -558,17 +542,21 @@ class HealthAkinatorApp {
 
 【絶対厳守ルール】
 1. 1ターンにつき質問は「絶対に1つだけ」。
-2. 【質問数のルール：2問以上、最大5問まで（厳守）】
-   - 1問目（質問1）では、どんなに病気が特定できたと思っても【絶対に結果（type: "result"）を出力してはいけません】。必ず疾患を絞り込むための質問を行ってください。
-   - 2問目〜4問目では、十分な確信が得られた場合は type: "result" を出力して構いません。まだ絞り込みが必要な場合は type: "question" で次の質問を続けてください。
-   - 5問目（質問5）の回答を受け取ったら、それ以上質問を続けず【必ず最終結果（type: "result"）】を出力してください。
-3. 【質問文と選択肢の整合性】
+2. 【質問数のルール：初回10問、その後は3問ごと（13問、16問、19問、最大22問）で結果出力】
+   - 現在の目標問数（${this.targetQuestions}問）に達するまでは、どんなに病気が特定できたと思っても、【絶対に結果（type: "result"）を出力してはいけません】。
+   - 必ずきっちり現在の目標問数（${this.targetQuestions}問目）まで1問ずつ質問（type: "question"）を続けてください。
+   - ${this.targetQuestions}問目の回答を受け取った時点で、type: "result" として結果を出力してください。
+3. 【答えの選択肢のルール：必要に応じて２つ以上６つ未満（2個〜5個）】
+   - 各質問の選択肢（options配列）は、質問内容や状況に応じて【必ず2つ以上6つ未満（2個〜5個）】としてください。
+   - 1個のみ、または6個以上の選択肢は【絶対に禁止】です。
+   - 二者択一の質問なら2個、程度や状況の選択肢なら3〜5個を具体的に設定してください。
+4. 【質問文と選択肢の整合性】
    - 「Aですか？それともBですか？」のような二者択一や状態選択の質問をする場合、選択肢を「はい/いいえ」にするのは【絶対に禁止】です。必ず選択肢自体を「Aの症状」「Bの症状」「どちらでもない」のように具体的に設定してください。
    - 「〜はありますか？」のような有無を尋ねる質問の場合のみ、「はい」「いいえ」などの選択肢にしてください。
-4. 【確率の合計は必ず100%】
+5. 【確率の合計は必ず100%】
    - 結果出力時（type: "result"）、diseases配列内の各疾患の probability の合計値は必ずピッタリ100（%）になるように配分してください（例：60%, 30%, 10%）。
-5. レッドフラッグ（突然の激しい頭痛、激しい胸痛、意識障害、呼吸困難等）を検知した場合は即座に救急車（119番）を促してください。
-6. 出力は必ず以下のJSON形式のみで返してください（Markdownのバッククォートjsonで囲む）。
+6. レッドフラッグ（突然の激しい頭痛、激しい胸痛、意識障害、呼吸困難等）を検知した場合は即座に救急車（119番）を促してください。
+7. 出力は必ず以下のJSON形式のみで返してください（Markdownのバッククォートjsonで囲む）。
 
 【質問時のJSONフォーマット例（二者択一・状況選択のとき）】
 {
@@ -586,7 +574,7 @@ class HealthAkinatorApp {
   "options": ["はい（伴っている）", "いいえ（伴っていない）", "どちらともいえない"]
 }
 
-【最終結果出力時のJSONフォーマット】（2問以上回答後、結果を出力する時）
+【最終結果出力時のJSONフォーマット】（全${this.targetQuestions}問が完了した時のみ出力）
 {
   "type": "result",
   "speech": "見えましたよ…！あなたの回答から、私が推測した可能性はこちらです！",
@@ -696,9 +684,16 @@ class HealthAkinatorApp {
         this.elQuickCareContent.textContent = res.quickCare || "安静にして体を休める";
         this.elPreventionContent.textContent = res.prevention || "規則正しい生活習慣";
 
-        this.elBtnBoost.textContent = "🔍 さらに精度を上げる（＋追加質問）";
-        this.elBtnBoost.style.opacity = "1";
-        this.elBtnBoost.style.cursor = "pointer";
+        if (this.targetQuestions >= 22) {
+            this.elBtnBoost.textContent = "✨ 最大精度達成（全22問完了）";
+            this.elBtnBoost.style.opacity = "0.7";
+            this.elBtnBoost.style.cursor = "default";
+        } else {
+            const nextCount = Math.min(22, this.targetQuestions + 3);
+            this.elBtnBoost.textContent = `🔍 さらに精度を上げる（＋3問追加：次は${nextCount}問目まで / 最大22問）`;
+            this.elBtnBoost.style.opacity = "1";
+            this.elBtnBoost.style.cursor = "pointer";
+        }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -757,48 +752,49 @@ class HealthAkinatorApp {
         this.elQuickCareContent.textContent = topDisease.quickCare;
         this.elPreventionContent.textContent = topDisease.prevention;
 
-        this.elBtnBoost.textContent = "🔍 さらに精度を上げる（＋追加質問）";
-        this.elBtnBoost.style.opacity = "1";
-        this.elBtnBoost.style.cursor = "pointer";
+        if (this.targetQuestions >= 22) {
+            this.elBtnBoost.textContent = "✨ 最大精度達成（全22問完了）";
+            this.elBtnBoost.style.opacity = "0.7";
+            this.elBtnBoost.style.cursor = "default";
+        } else {
+            const nextCount = Math.min(22, this.targetQuestions + 3);
+            this.elBtnBoost.textContent = `🔍 さらに精度を上げる（＋3問追加：次は${nextCount}問目まで / 最大22問）`;
+            this.elBtnBoost.style.opacity = "1";
+            this.elBtnBoost.style.cursor = "pointer";
+        }
 
         // スクロールを上部へ
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 【追加機能】さらに精度を上げる（＋追加質問）
+    // 【追加機能】さらに精度を上げる（＋3問追加、最大22問）
     boostQuestions() {
-        if (this.isAiMode) {
-            if (this.maxQuestions >= 8) {
-                alert("これ以上の深掘り質問はありません！ここまでの全回答から導き出した最高精度の結果です。");
-                return;
-            }
-            this.maxQuestions = 8;
-
-            this.currentPhase = 1;
-            this.elPhase0.style.display = "none";
-            this.elPhase1.style.display = "block";
-            this.elPhase2.style.display = "none";
-            this.setGenieSpeech("ふむ…まだ私の推理に納得がいかないようですね。ならばもっと奥深くまで探らせていただきましょう…！");
-            this.askGeminiNextQuestion("さらに質問を追加して、より深い観点から絞り込みを続けてください。");
+        if (this.targetQuestions >= 22) {
+            alert("これ以上の深掘り質問はありません！全22問から導き出した最高精度の結果です。");
             return;
         }
 
-        if (this.maxQuestions >= 8 || !this.categoryData.extraQuestions || this.categoryData.extraQuestions.length === 0) {
-            alert("これ以上の深掘り質問はありません！ここまでの全回答から導き出した最高精度の結果です。");
-            return;
-        }
+        const nextTarget = Math.min(22, this.targetQuestions + 3);
+        this.targetQuestions = nextTarget;
 
-        this.activeQuestions = [...this.categoryData.primaryQuestions, ...this.categoryData.extraQuestions];
-        this.maxQuestions = Math.min(8, this.activeQuestions.length);
-
-        this.elGenieContainer.className = "genie-avatar-container";
         this.currentPhase = 1;
         this.elPhase0.style.display = "none";
         this.elPhase1.style.display = "block";
         this.elPhase2.style.display = "none";
 
-        this.setGenieSpeech("ふむ…まだ私の推理に納得がいかないようですね。ならばもっと奥深くまで探らせていただきましょう…！");
-        this.renderAdaptiveQuestion();
+        this.setGenieSpeech(`ふむ…まだ私の推理に納得がいかないようですね。ならばさらに3問（${this.targetQuestions}問目まで）探らせていただきましょう…！`);
+
+        if (this.isAiMode) {
+            this.askGeminiNextQuestion(`さらに質問を3問追加して、第${this.targetQuestions}問目までより深い観点から絞り込みを続けてください。`);
+        } else {
+            // スマート適応モード：全22問の質問プールから順次出題
+            this.activeQuestions = [
+                ...this.categoryData.primaryQuestions,
+                ...(this.categoryData.extraQuestions || []),
+                ...(this.categoryData.extraQuestions2 || [])
+            ];
+            this.renderAdaptiveQuestion();
+        }
     }
 
     resetApp() {
@@ -808,8 +804,8 @@ class HealthAkinatorApp {
         this.categoryData = null;
         this.activeQuestions = [];
         this.currentQuestionIdx = 0;
-        this.minQuestions = 2;
-        this.maxQuestions = 5;
+        this.targetQuestions = 10;
+        this.maxTotalQuestions = 22;
         this.answers = {};
         this.conversationHistory = [];
         this.userNotes = [];
