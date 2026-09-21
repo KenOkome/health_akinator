@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヘルス・アキネーター | あなたの体の声を見通すAI診断アシスタント</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 背景オーロラ -->
+    <div class="ambient-glow"></div>
+
+    <!-- ヘッダー -->
+    <header>
+        <div class="logo-container" id="btnLogoHome" title="最初に戻る" role="button" tabindex="0">
+            <div class="logo-orb">🔮</div>
+            <div class="logo-text">Health Akinator</div>
+        </div>
+        <div class="header-actions">
+            <div id="aiModeBadge" class="ai-badge">💡 スマート適応モード</div>
+            <button id="btnSettings" class="btn-icon" title="設定">
+                ⚙️ 設定
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main>
+        <!-- キャラクター（アキネーター魔神）演出 -->
+        <div class="genie-character">
+            <div class="genie-avatar-container" id="genieContainer">
+                <div class="genie-aura-ring"></div>
+                <div class="genie-aura-glow"></div>
+                <img src="genie.jpg" alt="Health Akinator Genie" class="genie-img" id="genieImg">
+                <div class="genie-sparkle">✨</div>
+            </div>
+            <div id="genieSpeech" class="genie-speech">
+                こんにちは！私はあなたの体調不良の原因を推測するヘルス・アキネーターです。今、一番気になっている症状を1つ教えてください。
+            </div>
+        </div>
+
+        <!-- フェーズ0: 主訴入力カード -->
+        <div id="phase0" class="app-card">
+            <h2 class="phase-title">気になる症状はどれですか？</h2>
+            <p class="phase-subtitle">当てはまる症状を1つ選ぶか、下の欄に自由に入力してください。</p>
+
+            <!-- クイック選択ボタン -->
+            <div class="quick-symptoms">
+                <button class="btn-quick" data-category="headache">
+                    <span class="icon">🤕</span>
+                    <span>頭が痛い</span>
+                </button>
+                <button class="btn-quick" data-category="stomach">
+                    <span class="icon">🤢</span>
+                    <span>お腹・胃が痛い</span>
+                </button>
+                <button class="btn-quick" data-category="cold">
+                    <span class="icon">🤒</span>
+                    <span>熱・喉・風邪</span>
+                </button>
+                <button class="btn-quick" data-category="fatigue">
+                    <span class="icon">🥱</span>
+                    <span>だるい・疲労感</span>
+                </button>
+            </div>
+
+            <!-- 自由入力フォーム -->
+            <div class="input-group">
+                <input type="text" id="symptomInput" class="input-text" placeholder="例：こめかみがズキズキ痛む、胃がもたれる など" maxlength="100">
+                <button id="btnStart" class="btn-primary">診断開始 👉</button>
+            </div>
+        </div>
+
+        <!-- フェーズ1: 質問カード（1問1答） -->
+        <div id="phase1" class="app-card" style="display: none;">
+            <div class="question-header">
+                <span id="questionBadge" class="question-badge">質問 1 / 10</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="progressFill" class="progress-bar-fill"></div>
+            </div>
+
+            <div id="questionText" class="question-text">
+                （質問文がここに表示されます）
+            </div>
+
+            <!-- 選択肢ボタン -->
+            <div id="answerOptions" class="answer-options">
+                <!-- JSで動的生成 -->
+            </div>
+
+            <!-- 自由記述回答欄 -->
+            <div class="answer-custom-input">
+                <div class="input-group">
+                    <input type="text" id="customAnswerInput" class="input-text" placeholder="詳しい状況を自由に書いて答えることもできます" maxlength="100">
+                    <button id="btnCustomAnswer" class="btn-secondary" style="flex: 0 0 auto; padding: 14px 20px;">回答する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- フェーズ2: 結果発表カード -->
+        <div id="phase2" class="app-card" style="display: none;">
+            <div class="result-header">
+                <div class="result-verdict">見えましたよ…！</div>
+                <p style="color: var(--text-secondary); font-size: 14px;">あなたの回答から推測した可能性とアドバイスです。</p>
+            </div>
+
+            <!-- 可能性のある原因（確率バーグラフ） -->
+            <div id="probabilityList" class="probability-list">
+                <!-- JSで動的生成 -->
+            </div>
+
+            <!-- おすすめの受診診療科 -->
+            <div class="info-section">
+                <div class="info-title">🏥 おすすめの受診診療科</div>
+                <div id="deptContent" class="info-content"></div>
+            </div>
+
+            <!-- 症状緩和のヒント（市販薬・食事） -->
+            <div class="info-section">
+                <div class="info-title">💊 市販薬の目安</div>
+                <div id="otcContent" class="info-content"></div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-title">🥗 おすすめの食品・食事</div>
+                <div id="foodContent" class="info-content"></div>
+            </div>
+
+            <!-- 対策と予防行動 -->
+            <div class="info-section">
+                <div class="info-title">⚡ 今すぐできる対策</div>
+                <div id="quickCareContent" class="info-content"></div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-title">🛡️ 今後の予防行動</div>
+                <div id="preventionContent" class="info-content"></div>
+            </div>
+
+            <!-- アクションボタン群 -->
+            <div class="actions-container">
+                <button id="btnRestart" class="btn-secondary">🔄 最初からやり直す</button>
+                <button id="btnBoost" class="btn-boost">🔍 さらに精度を上げる（＋5問追加）</button>
+            </div>
+
+            <!-- 免責事項 -->
+            <div class="disclaimer-box">
+                ⚠️ <strong>【重要事項】</strong><br>
+                本サービスは統計的・確率的な目安をエンターテインメントを交えて提示するものであり、医療診断ではありません。体調に不安がある場合や症状が続く場合は、必ず医師の診察を受けてください。
+            </div>
+        </div>
+    </main>
+
+    <!-- レッドフラッグ（緊急警報）モーダル -->
+    <div id="emergencyModal" class="emergency-modal">
+        <div class="emergency-card">
+            <div style="font-size: 48px; margin-bottom: 12px;">🚨</div>
+            <h2 class="emergency-title">緊急の受診・対応が必要です</h2>
+            <div id="emergencyMsg" class="emergency-desc"></div>
+
+            <div class="emergency-contact-box">
+                <div style="font-size: 13px; color: #FECACA; margin-bottom: 4px;">迷わず救急車を呼んでください</div>
+                <div class="emergency-phone">☎ 119</div>
+                <div style="font-size: 12px; color: #FCA5A5; margin-top: 6px;">救急相談センター（相談窓口）: #7119</div>
+            </div>
+
+            <button id="btnEmergencyClose" class="btn-secondary" style="width: 100%;">
+                画面を閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- 設定モーダル（Gemini API連携等） -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3 style="font-size: 18px; margin-bottom: 14px; color: #FFF;">⚙️ アプリ設定</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.5;">
+                本アプリは内蔵推論エンジンによりAPIキーなしで快適に動作します。さらに高度なGeminiモデルとリアルタイム対話したい場合は、以下にAPIキーを設定できます。
+            </p>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 12px; color: var(--text-accent); display: block; margin-bottom: 6px;">Gemini API Key（任意）:</label>
+                <input type="password" id="apiKeyInput" class="input-text" style="width: 100%;" placeholder="AIzaSy...">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 12px; color: var(--text-accent); display: block; margin-bottom: 6px;">使用するAIモデル（Gemini 3シリーズ）:</label>
+                <select id="modelSelect" class="input-text" style="width: 100%; background: #1e293b; color: #fff; cursor: pointer;">
+                    <option value="gemini-3.5-flash-lite" selected>Gemini 3.5 Flash-Lite（推奨：最速レスポンス・安定動作）</option>
+                    <option value="gemini-3.5-flash">Gemini 3.5 Flash（高度推論・高効率）</option>
+                    <option value="gemini-3.8-flash">Gemini 3.8 Flash（フラッグシップ）</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+                <button id="btnClearApiKey" class="btn-secondary" style="padding: 10px 14px; font-size: 12px; color: #FCA5A5; border-color: rgba(239, 68, 68, 0.3);">
+                    🗑️ キーをクリア（内蔵モードへ）
+                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnCloseSettings" class="btn-secondary" style="padding: 10px 18px;">キャンセル</button>
+                    <button id="btnSaveSettings" class="btn-primary" style="padding: 10px 22px;">保存する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer>
+        Health Akinator &copy; 2026 - Powered by Antigravity AI
+    </footer>
+
+    <!-- スクリプト読み込み -->
+    <script src="knowledge_base.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

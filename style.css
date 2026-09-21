@@ -1,0 +1,770 @@
+/* ==========================================================================
+   ヘルス・アキネーター（Health Akinator）モダン・スタイルシート
+   Aesthetic: Mystic Cyber-Health (Deep Navy & Neon Aurora Glassmorphism)
+   ========================================================================== */
+
+:root {
+    --bg-primary: #070A13;
+    --bg-card: rgba(16, 23, 42, 0.75);
+    --bg-card-hover: rgba(30, 41, 69, 0.85);
+    --border-color: rgba(56, 189, 248, 0.2);
+    --border-glow: rgba(0, 229, 255, 0.4);
+
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-accent: #38BDF8;
+    
+    --accent-cyan: #00E5FF;
+    --accent-emerald: #10B981;
+    --accent-purple: #8B5CF6;
+    --accent-gold: #F59E0B;
+    --accent-danger: #EF4444;
+
+    --font-heading: 'Outfit', 'M PLUS 1p', sans-serif;
+    --font-body: 'M PLUS 1p', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --radius-full: 9999px;
+
+    --shadow-glow: 0 0 25px rgba(0, 229, 255, 0.25);
+    --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* 背景のオーロラ・光彩エフェクト */
+.ambient-glow {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0, 229, 255, 0.1) 40%, transparent 70%);
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+    animation: pulseAmbient 8s ease-in-out infinite alternate;
+}
+
+@keyframes pulseAmbient {
+    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+    100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.9; }
+}
+
+/* ヘッダー */
+header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    border-radius: var(--radius-md);
+    padding: 4px 8px;
+    margin: -4px -8px;
+}
+
+.logo-container:hover {
+    transform: scale(1.04);
+    opacity: 0.95;
+}
+
+.logo-container:active {
+    transform: scale(0.96);
+}
+
+.logo-orb {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    box-shadow: 0 0 15px var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    animation: orbRotate 6s linear infinite;
+}
+
+@keyframes orbRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.logo-text {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #FFFFFF, var(--text-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-badge {
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    color: var(--accent-cyan);
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: default;
+    transition: all 0.3s ease;
+}
+
+.ai-badge.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2));
+    border-color: var(--accent-emerald);
+    color: #6EE7B7;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    animation: pulseBadge 2s infinite alternate;
+}
+
+@keyframes pulseBadge {
+    0% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+    100% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.6); }
+}
+
+.btn-icon {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFF;
+    border-color: var(--accent-cyan);
+}
+
+/* メインコンテナ */
+main {
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* キャラクター（魔神オーブ・アバター）エリア */
+.genie-character {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.genie-avatar-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: floatGenieOjisan 4s ease-in-out infinite alternate;
+}
+
+/* でっぷりおじさんがお腹を揺らして堂々と浮遊するモーション */
+@keyframes floatGenieOjisan {
+    0% {
+        transform: translateY(0px) rotate(0deg) scale(1);
+    }
+    30% {
+        transform: translateY(-8px) rotate(-1.5deg) scale(1.02, 0.98);
+    }
+    65% {
+        transform: translateY(-16px) rotate(1.5deg) scale(0.98, 1.02);
+    }
+    100% {
+        transform: translateY(-12px) rotate(0deg) scale(1);
+    }
+}
+
+/* オーラ（回転リング） */
+.genie-aura-ring {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #00E5FF, #2563EB, #FBBF24, #00E5FF);
+    animation: rotateAura 5s linear infinite;
+    filter: blur(12px);
+    opacity: 0.85;
+    z-index: 1;
+}
+
+@keyframes rotateAura {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* オーラ（深層の脈動グロー） */
+.genie-aura-glow {
+    position: absolute;
+    inset: -25px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.45) 0%, rgba(37, 99, 235, 0.3) 50%, rgba(251, 191, 36, 0.15) 75%, transparent 85%);
+    animation: pulseAura 3s ease-in-out infinite alternate;
+    z-index: 0;
+}
+
+@keyframes pulseAura {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    100% { transform: scale(1.15); opacity: 0.9; }
+}
+
+/* アバター画像本体 */
+.genie-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(0, 229, 255, 0.6);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* キラキラ光るパーティクル */
+.genie-sparkle {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 20px;
+    z-index: 3;
+    animation: sparkleTwinkle 2s infinite ease-in-out;
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
+    50% { transform: scale(1.3) rotate(45deg); opacity: 1; }
+}
+
+/* 【アニメーション状態1】回答時の思考モーション（thinking） */
+.genie-avatar-container.thinking .genie-img {
+    animation: thinkTilt 0.8s ease-in-out;
+    filter: brightness(1.2);
+}
+
+@keyframes thinkTilt {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(-6deg) scale(0.96); }
+    60% { transform: rotate(4deg) scale(1.02); }
+    100% { transform: rotate(0deg) scale(1); }
+}
+
+/* 【アニメーション状態2】結果発表時のひらめき・ズームイン（revealed） */
+.genie-avatar-container.revealed {
+    animation: revealBurst 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes revealBurst {
+    0% { transform: scale(0.9) translateY(0); }
+    50% { transform: scale(1.15) translateY(-20px); filter: drop-shadow(0 0 35px var(--accent-cyan)); }
+    100% { transform: scale(1.05) translateY(-10px); filter: drop-shadow(0 0 25px var(--accent-emerald)); }
+}
+
+/* 【アニメーション状態3】緊急時の警告モーション（danger） */
+.genie-avatar-container.danger {
+    animation: dangerShake 0.5s ease-in-out infinite alternate;
+}
+
+.genie-avatar-container.danger .genie-aura-ring {
+    background: conic-gradient(from 0deg, #EF4444, #DC2626, #F87171, #EF4444);
+}
+
+@keyframes dangerShake {
+    0% { transform: translate(-3px, -5px) rotate(-2deg); }
+    100% { transform: translate(3px, -15px) rotate(2deg); }
+}
+
+.genie-speech {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    padding: 14px 26px;
+    border-radius: var(--radius-full);
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text-accent);
+    box-shadow: var(--shadow-glow);
+    max-width: 90%;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+}
+
+/* カード共通スタイル */
+.app-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 32px 28px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+/* フェーズ0: 主訴入力 */
+.phase-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+    background: linear-gradient(90deg, #FFFFFF, #E2E8F0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.phase-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.quick-symptoms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.btn-quick {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-quick span.icon {
+    font-size: 22px;
+}
+
+.btn-quick:hover {
+    background: rgba(0, 229, 255, 0.1);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.2);
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-text {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    font-size: 15px;
+    color: #FFF;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-text:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0284C7, #00E5FF);
+    border: none;
+    color: #070A13;
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.4);
+}
+
+/* フェーズ1: 質問カード */
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.question-badge {
+    background: rgba(0, 229, 255, 0.15);
+    color: var(--accent-cyan);
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 10%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+}
+
+.question-text {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 28px;
+    min-height: 56px;
+    text-align: center;
+}
+
+.answer-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.btn-answer {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #FFF;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.btn-answer:hover {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: var(--accent-cyan);
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
+}
+
+.answer-custom-input {
+    margin-top: 14px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 14px;
+}
+
+/* フェーズ2: 結果発表カード */
+.result-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.result-verdict {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.probability-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.prob-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+}
+
+.prob-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.prob-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #FFF;
+}
+
+.prob-percent {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent-cyan);
+}
+
+.prob-bar-bg {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.prob-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+    border-radius: var(--radius-full);
+}
+
+.prob-reason {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.info-section {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--accent-cyan);
+}
+
+.info-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-content {
+    font-size: 13.5px;
+    color: #CBD5E1;
+    line-height: 1.6;
+}
+
+.actions-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-secondary {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #FFF;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-boost {
+    flex: 1.2;
+    background: linear-gradient(135deg, #7C3AED, #00E5FF);
+    border: none;
+    color: #FFF;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    text-align: center;
+}
+
+.btn-boost:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 229, 255, 0.4);
+}
+
+.disclaimer-box {
+    margin-top: 24px;
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-size: 12px;
+    color: #FCA5A5;
+    line-height: 1.5;
+}
+
+/* レッドフラッグ（緊急モーダル） */
+.emergency-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.emergency-card {
+    background: #18080C;
+    border: 2px solid var(--accent-danger);
+    box-shadow: 0 0 50px rgba(239, 68, 68, 0.5);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    animation: dangerPulse 2s infinite alternate;
+}
+
+@keyframes dangerPulse {
+    0% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
+    100% { box-shadow: 0 0 60px rgba(239, 68, 68, 0.7); }
+}
+
+.emergency-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #F87171;
+    margin-bottom: 12px;
+}
+
+.emergency-desc {
+    font-size: 14.5px;
+    color: #FECACA;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.emergency-contact-box {
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.emergency-phone {
+    font-size: 28px;
+    font-weight: 800;
+    color: #FFF;
+    letter-spacing: 2px;
+}
+
+/* フッター */
+footer {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 設定モーダル */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+    padding: 20px;
+}
+
+.modal-content {
+    background: #0F172A;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    max-width: 480px;
+    width: 100%;
+}
