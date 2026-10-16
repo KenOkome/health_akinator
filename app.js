@@ -33,12 +33,18 @@ class HealthAkinatorApp {
             console.warn("URL key parse error:", e);
         }
 
-        this.geminiApiKey = localStorage.getItem("gemini_api_key") || "";
-        let savedModel = localStorage.getItem("gemini_model") || "gemini-3.5-flash-lite";
-        // 旧世代モデル（1.5系、2.0系）が残っている場合はGemini 3系へ自動移行
-        if (!savedModel.startsWith("gemini-3")) {
-            savedModel = "gemini-3.5-flash-lite";
+        const localEnvKey = (window.LOCAL_ENV_CONFIG && window.LOCAL_ENV_CONFIG.GEMINI_API_KEY) || "";
+        this.geminiApiKey = localStorage.getItem("gemini_api_key") || localEnvKey || "";
+        if (this.geminiApiKey && !localStorage.getItem("gemini_api_key")) {
+            localStorage.setItem("gemini_api_key", this.geminiApiKey);
+        }
+
+        let savedModel = localStorage.getItem("gemini_model") || "gemini-3.8-flash";
+        // 旧世代モデルや過去の初期値からGemini 3.8 Flashへ初期移行
+        if (!savedModel.startsWith("gemini-3") || !localStorage.getItem("gemini_model_v38_migrated")) {
+            savedModel = "gemini-3.8-flash";
             localStorage.setItem("gemini_model", savedModel);
+            localStorage.setItem("gemini_model_v38_migrated", "1");
         }
         this.geminiModel = savedModel;
         this.isAiMode = !!this.geminiApiKey;
@@ -116,10 +122,11 @@ class HealthAkinatorApp {
         if (!this.elAiBadge) return;
         if (this.geminiApiKey) {
             const modelNameMap = {
-                "gemini-3.5-flash-lite": "Gemini 3.5 Lite",
+                "gemini-3.8-flash": "Gemini 3.8 Flash",
+                "gemini-3.6-flash": "Gemini 3.6 Flash",
                 "gemini-3.5-flash": "Gemini 3.5 Flash",
-                "gemini-3.1-flash-lite": "Gemini 3.1 Lite",
-                "gemini-3.8-flash": "Gemini 3.8 Flash"
+                "gemini-3.5-flash-lite": "Gemini 3.5 Lite",
+                "gemini-3.1-flash-lite": "Gemini 3.1 Lite"
             };
             const label = modelNameMap[this.geminiModel] || this.geminiModel;
             this.elAiBadge.innerHTML = `⚡ <strong>${label} モード</strong>`;
@@ -565,8 +572,9 @@ class HealthAkinatorApp {
     }
 
     async callGemini(promptText, retryCount = 0) {
-        const fallbackModels = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.1-flash-lite"];
-        let model = this.geminiModel || "gemini-3.5-flash-lite";
+        const primaryModel = this.geminiModel || "gemini-3.8-flash";
+        const fallbackModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"].filter(m => m !== primaryModel);
+        let model = primaryModel;
         if (retryCount > 0 && retryCount <= fallbackModels.length) {
             model = fallbackModels[retryCount - 1];
         }
@@ -650,9 +658,9 @@ class HealthAkinatorApp {
             const isTemporary = res.status === 503 || res.status === 429 || res.status === 404 || errMsg.includes("high demand") || errMsg.includes("temporarily unavailable") || errMsg.includes("no longer available");
             if (isTemporary && retryCount < fallbackModels.length) {
                 const nextModel = fallbackModels[retryCount];
-                console.warn(`モデル ${model} でエラー (${errMsg}) のため、${nextModel} に切り替えて再試行します (${retryCount + 1}/${fallbackModels.length})...`);
-                this.setGenieSpeech("思考を集中させております…少々お待ちくだされ（モデル自動切替中）…");
-                await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+                console.warn(`モデル ${model} で混雑/一時エラー (${errMsg}) のため、${nextModel} に切り替えて再試行します (${retryCount + 1}/${fallbackModels.length})...`);
+                this.setGenieSpeech("思考を集中させております…少々お待ちくだされ（高速回線へ自動切替中）…");
+                await new Promise(r => setTimeout(r, 400));
                 return await this.callGemini(promptText, retryCount + 1);
             }
 
@@ -998,8 +1006,13 @@ class HealthAkinatorApp {
     }
 
     // Gemini APIによる相談応答
-    async callGeminiConsultationApi(query) {
-        let model = this.geminiModel || "gemini-3.5-flash-lite";
+    async callGeminiConsultationApi(query, retryCount = 0) {
+        const primaryModel = this.geminiModel || "gemini-3.8-flash";
+        const fallbackModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"].filter(m => m !== primaryModel);
+        let model = primaryModel;
+        if (retryCount > 0 && retryCount <= fallbackModels.length) {
+            model = fallbackModels[retryCount - 1];
+        }
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
 
         const contextDisease = JSON.stringify(this.lastResultData || this.lastTopDisease || {});
@@ -1044,7 +1057,15 @@ class HealthAkinatorApp {
 
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `API error: ${res.status}`);
+            const errMsg = errData.error?.message || `API error: ${res.status}`;
+            const isTemporary = res.status === 503 || res.status === 429 || res.status === 404 || errMsg.includes("high demand") || errMsg.includes("temporarily unavailable") || errMsg.includes("no longer available");
+            if (isTemporary && retryCount < fallbackModels.length) {
+                const nextModel = fallbackModels[retryCount];
+                console.warn(`相談API モデル ${model} で混雑/一時エラー (${errMsg}) のため、${nextModel} に切り替えて再試行します (${retryCount + 1}/${fallbackModels.length})...`);
+                await new Promise(r => setTimeout(r, 400));
+                return await this.callGeminiConsultationApi(query, retryCount + 1);
+            }
+            throw new Error(errMsg);
         }
 
         const data = await res.json();

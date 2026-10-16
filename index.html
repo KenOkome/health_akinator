@@ -219,9 +219,10 @@
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-accent); display: block; margin-bottom: 6px;">使用するAIモデル（Gemini 3シリーズ）:</label>
                 <select id="modelSelect" class="input-text" style="width: 100%; background: #1e293b; color: #fff; cursor: pointer;">
-                    <option value="gemini-3.5-flash-lite" selected>Gemini 3.5 Flash-Lite（推奨：最速レスポンス・安定動作）</option>
+                    <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash（推奨：フラッグシップ・最高精度）</option>
+                    <option value="gemini-3.6-flash">Gemini 3.6 Flash（高精度・安定動作）</option>
                     <option value="gemini-3.5-flash">Gemini 3.5 Flash（高度推論・高効率）</option>
-                    <option value="gemini-3.8-flash">Gemini 3.8 Flash（フラッグシップ）</option>
+                    <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite（最速レスポンス・軽量）</option>
                 </select>
             </div>
             <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
@@ -242,6 +243,7 @@
     </footer>
 
     <!-- スクリプト読み込み -->
+    <script src="config.local.js" onerror="/* ローカル設定ファイルがない環境ではスキップ */"></script>
     <script src="knowledge_base.js"></script>
     <script src="app.js"></script>
 </body>
